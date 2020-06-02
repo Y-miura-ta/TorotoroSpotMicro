@@ -5,6 +5,7 @@ import numpy as np
 from math import *
 import matplotlib.pyplot as plt
 
+# デバッグ用描画の設定
 def setupView(limit):
     ax = plt.axes(projection="3d")
     ax.set_xlim(-limit, limit)
@@ -14,8 +15,6 @@ def setupView(limit):
     ax.set_ylabel("Z")
     ax.set_zlabel("Y")
     return ax
-
-setupView(200).view_init(elev=12., azim=28)
 
 # 目標位置までを分割数で割ったベクトルを返す
 def linearDiv(p_start, p_goal, div_num):
@@ -38,6 +37,7 @@ def vecIntegral(p_start, p_goal, p_now, div_vec, div_num, iter_now):
 
 def main():
     # グラフで確認
+    setupView(200).view_init(elev=12., azim=28)
     p_start = np.array([0, 100, 200])
     p_goal = np.array([10, 50, 80])
     div_num = 30

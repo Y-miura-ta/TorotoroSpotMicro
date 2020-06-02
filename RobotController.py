@@ -18,8 +18,8 @@ p_rough_control_x = 10.0/50
 #関節の回転正方向を決める行列
 theta_sign = np.array([
     [1, 1, 1], # lf
-    [1, 1, 1], # lb
     [1, 1, 1], # rf
+    [1, 1, 1], # lb
     [1, 1, 1]  # rb
 ])
 # theta_sign_vec = theta_sign.flatten()
