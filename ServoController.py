@@ -13,26 +13,32 @@ i2c = busio.I2C(SCL, SDA)
 pca = PCA9685(i2c)
 pca.frequency = 50
 
+# lf, rf, lb, rb
 SERVO_NUM = 12
 max_pulse = [
-    452,2000,2000,
-    2000,2000,2000,
-    2000,2000,2000,
-    2000,2000,2000
+    2658,2255,2560,
+    2658,2577,2560,
+    2658,2255,2560,
+    2658,2577,2560
 ]
 min_pulse = [
-    2560,1000,1000,
-    1000,1000,1000,
-    1000,1000,1000,
-    1000,1000,1000
+    324,319,577,
+    324,641,577,
+    324,319,577,
+    324,641,577
 ]
-pulse_center_pos = [
-    2560,1500,1500,
-    1500,1500,1500,
-    1500,1500,1500,
-    1500,1500,1500
+# deg_center_pos = [
+#     92,90,180,
+#     90,90,180,
+#     90,90,180,
+#     90,90,180,
+# ]
+deg_center_pos = [
+    92,92,90,
+    94,101,104,
+    95,94,83,
+    92,94,108,
 ]
-deg_center_pos = 180*(np.array(pulse_center_pos)-np.array(min_pulse))/(np.array(max_pulse)-np.array(min_pulse))
 pulse_to_deg = 180/(np.array(max_pulse)-np.array(min_pulse))
 deg_to_pulse = (np.array(max_pulse)-np.array(min_pulse))/180
 
@@ -84,6 +90,8 @@ def calibrateServo():
     #key_listener.start()
 
 def main():
+    for i in range(SERVO_NUM):
+        servos[i].angle = deg_center_pos[i]
     # キャリブレーション
     while(1):
         calibrateServo()
