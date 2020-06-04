@@ -88,7 +88,6 @@ def drawLegPoints(p):
     plt.plot([p[4][0]],[p[4][1]],[p[4][2]],'ro',lw=2)    
 
 def drawLegPair(Tl,Tr,Ll,Lr):
-    print(Tl,Tr,Ll,Lr)
     Ix=np.array([[-1,0,0,0],[0,1,0,0],[0,0,1,0],[0,0,0,1]])
     drawLegPoints([Tl@x for x in calcLegPoints(legIK(np.linalg.inv(Tl)@Ll))])
     drawLegPoints([Tr@Ix@x for x in calcLegPoints(legIK(Ix@np.linalg.inv(Tr)@Lr))])
