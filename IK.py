@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-#前後がX軸、上下がY軸
+#前後がX軸、左右が軸、上下がZ軸
 
 from mpl_toolkits import mplot3d
 import numpy as np
