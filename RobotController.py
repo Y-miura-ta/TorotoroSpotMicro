@@ -28,21 +28,29 @@ class bodyIK:
         
         sc.setRadThetas(thetas)
 
+class legIK:
+    def __init__(self, p_lf):
+        self.Llf = leg_points[0]
+        self.Lrf = leg_points[1]
+        self.Llb = leg_points[2]
+        self.Lrb = leg_points[3]
+
 def main():
-    Lp=np.array([[100, 100, -130, 1], [100, -100, -130, 1], [-100, 100, -130, 1], [-100, -100, -130, 1]])
+    Lp=np.array([[100, 100, -100, 1], [100, -100, -100, 1], [-100, 100, -100, 1], [-100, -100, -100, 1]])
     body = bodyIK(Lp)
-    for i in range(10):
-        body.setPose(0.0, 0.4/100*i, 0.0, 0, 0, 0)
-        time.sleep(0.01)
-    for i in range(100):
-        body.setPose(0.0, 0.4/100*(99-i), 0.0, 0, 0, 0)
-        time.sleep(0.01)
-    for i in range(100):
-        body.setPose(0.0, 0.0, 0.4/100*i, 0, 0, 0)
-        time.sleep(0.01)
-    for i in range(10):
-        body.setPose(0.0, 0.0, 0.4/100*(99-i), 0, 0, 0)
-        time.sleep(0.01)
+    body.setPose(0.4, 0.4, -0.4, 10.0, 0.0, 0.0)
+    # for i in range(10):
+    #     body.setPose(0.0, 0.4/100*i, 0.0, 0, 0, 0)
+    #     time.sleep(0.01)
+    # for i in range(100):
+    #     body.setPose(0.0, 0.4/100*(99-i), 0.0, 0, 0, 0)
+    #     time.sleep(0.01)
+    # for i in range(100):
+    #     body.setPose(0.0, 0.0, 0.4/100*i, 0, 0, 0)
+    #     time.sleep(0.01)
+    # for i in range(10):
+    #     body.setPose(0.0, 0.0, 0.4/100*(99-i), 0, 0, 0)
+    #     time.sleep(0.01)
     
 if __name__ == '__main__':
     main()
