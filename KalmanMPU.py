@@ -79,10 +79,7 @@ compAngleY = pitch
 kalAngleX = roll
 kalAngleY = pitch
 
-# タイマ割り込みの周期[s]
-dt = 10.0e-3
-
-def kalmanLoop(kalAngleX, kalAngleY, kalmanX, kalmanY, kalmanZ, gyroXangle, gyroYangle, compAngleX, compAngleY):
+def kalmanLoop(dt, kalAngleX, kalAngleY, kalmanX, kalmanY, kalmanZ, gyroXangle, gyroYangle, compAngleX, compAngleY):
     # Update all the values
     accX = read_raw_data(ACCEL_XOUT_H)
     accY = read_raw_data(ACCEL_YOUT_H)
@@ -149,14 +146,20 @@ class timer_kalman():
 
         self._raw_datas = []
 
-        # TODO:calculate real dt
-        self._dt = dt
+        # タイマ割り込みの目標周期[s]
+        self.dt =  10.0e-3
+        self.real_dt = self.dt
+        self.controll_time = time.time()
 
         signal.signal(signal.SIGALRM, self.kalman)
-        signal.setitimer(signal.ITIMER_REAL, self._dt, self._dt)
+        signal.setitimer(signal.ITIMER_REAL, self.dt, self.dt)
         
     def kalman(self, arg1, arg2):
-        self._kalAngleX, self._kalAngleY, self._kalmanX, self._kalmanY, self._kalmanZ, self._gyroXangle, self._gyroYangle, self._compAngleX, self._compAngleY, self._raw_datas = kalmanLoop(self._kalAngleX, self._kalAngleY, self._kalmanX, self._kalmanY, self._kalmanZ, self._gyroXangle, self._gyroYangle, self._compAngleX, self._compAngleY)
+        time_now = time.time()
+        self.real_dt = time_now - self.controll_time
+        self._kalAngleX, self._kalAngleY, self._kalmanX, self._kalmanY, self._kalmanZ, self._gyroXangle, self._gyroYangle, self._compAngleX, self._compAngleY, self._raw_datas = kalmanLoop(self.real_dt, self._kalAngleX, self._kalAngleY, self._kalmanX, self._kalmanY, self._kalmanZ, self._gyroXangle, self._gyroYangle, self._compAngleX, self._compAngleY)
+        self.controll_time = time_now
+        # print(self.real_dt)
 
     def pause_timer_kalman(self):
         signal.pause()
@@ -165,8 +168,9 @@ def main():
     t_kf = timer_kalman()
 
     for i in range(1000):
-        print(t_kf._kalmanX, t_kf._gyroXangle, t_kf._compAngleX)
-        time.sleep(0.1)
+        print("dt:{}, kal_deg_x:{}, comp_deg_x:{}".format(t_kf.dt, t_kf._kalAngleX, t_kf._compAngleX))
+        print("dt:{}, kal_deg_y:{}, comp_deg_y:{}".format(t_kf.dt, t_kf._kalAngleY, t_kf._compAngleY))
+        time.sleep(1)
 
     t_kf.pause_timer_kalman()
     
