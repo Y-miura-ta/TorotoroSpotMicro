@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 
-# from mpl_toolkits import mplot3d
+from mpl_toolkits import mplot3d
 import numpy as np
 from math import *
-# import matplotlib.pyplot as plt
+import matplotlib.pyplot as plt
 import time
 import IK
 import ServoController as sc
