@@ -1,8 +1,9 @@
 # -*- coding: utf-8 -*-
 
+import time
+import signal
 from math import *
 import smbus
-import time
 import Kalman as kf
 
 # some MPU6050 Registers and their Address
@@ -79,7 +80,7 @@ kalAngleX = roll
 kalAngleY = pitch
 
 # タイマ割り込みの周期[s]
-dt = 1.0e-4
+dt = 10.0e-3
 
 def kalmanLoop(kalAngleX, kalAngleY, kalmanX, kalmanY, kalmanZ, gyroXangle, gyroYangle, compAngleX, compAngleY):
     # Update all the values
@@ -90,6 +91,8 @@ def kalmanLoop(kalAngleX, kalAngleY, kalmanX, kalmanY, kalmanZ, gyroXangle, gyro
     gyroX = read_raw_data(GYRO_XOUT_H)
     gyroY = read_raw_data(GYRO_YOUT_H)
     gyroZ = read_raw_data(GYRO_ZOUT_H)
+
+    raw_datas = [[accX, accY, accZ], [tempRaw], [gyroX, gyroY, gyroZ]]
 
     roll  = atan(accY / sqrt(accX * accX + accZ * accZ)) * RAD_TO_DEG
     pitch = atan2(-accX, accZ) * RAD_TO_DEG
@@ -125,12 +128,53 @@ def kalmanLoop(kalAngleX, kalAngleY, kalmanX, kalmanY, kalmanZ, gyroXangle, gyro
     if (gyroYangle < -180 or gyroYangle > 180):
         gyroYangle = kalAngleY
 
-    print("pitch:{}, gy_pitch:{}, cmp_pitch:{}, kal_pitch:{}".format(pitch, gyroYangle, compAngleY, kalAngleY))
+    # print("pitch:{}, gy_pitch:{}, cmp_pitch:{}, kal_pitch:{}".format(pitch, gyroYangle, compAngleY, kalAngleY))
 
-    return kalAngleX, kalAngleY, kalmanX, kalmanY, kalmanZ, gyroXangle, gyroYangle, compAngleX, compAngleY
+    return kalAngleX, kalAngleY, kalmanX, kalmanY, kalmanZ, gyroXangle, gyroYangle, compAngleX, compAngleY, raw_datas
 
-while(1):
-    kalAngleX, kalAngleY, kalmanX, kalmanY, kalmanZ, gyroXangle, gyroYangle, compAngleX, compAngleY = kalmanLoop(kalAngleX, kalAngleY, kalmanX, kalmanY, kalmanZ, gyroXangle, gyroYangle, compAngleX, compAngleY)
+class timer_kalman():
+    def __init__(self):
+        self._kalAngleX = kalAngleX
+        self._kalAngleY = kalAngleY
+
+        self._kalmanX = kalmanX
+        self._kalmanY = kalmanY
+        self._kalmanZ = kalmanZ
+
+        self._gyroXangle = gyroXangle
+        self._gyroYangle = gyroYangle
+        
+        self._compAngleX = compAngleX
+        self._compAngleY = compAngleY
+
+        self._raw_datas = []
+
+        # TODO:calculate real dt
+        self._dt = dt
+
+        signal.signal(signal.SIGALRM, self.kalman)
+        signal.setitimer(signal.ITIMER_REAL, self._dt, self._dt)
+        
+    def kalman(self, arg1, arg2):
+        self._kalAngleX, self._kalAngleY, self._kalmanX, self._kalmanY, self._kalmanZ, self._gyroXangle, self._gyroYangle, self._compAngleX, self._compAngleY, self._raw_datas = kalmanLoop(self._kalAngleX, self._kalAngleY, self._kalmanX, self._kalmanY, self._kalmanZ, self._gyroXangle, self._gyroYangle, self._compAngleX, self._compAngleY)
+
+    def pause_timer_kalman(self):
+        signal.pause()
+
+def main():
+    t_kf = timer_kalman()
+
+    for i in range(1000):
+        print(t_kf._kalmanX, t_kf._gyroXangle, t_kf._compAngleX)
+        time.sleep(0.1)
+
+    t_kf.pause_timer_kalman()
+    
+if __name__ == '__main__':
+    main()
+
+# while(1):
+#     kalAngleX, kalAngleY, kalmanX, kalmanY, kalmanZ, gyroXangle, gyroYangle, compAngleX, compAngleY, raw_datas = kalmanLoop(kalAngleX, kalAngleY, kalmanX, kalmanY, kalmanZ, gyroXangle, gyroYangle, compAngleX, compAngleY)
 
 #   /* Print Data */
 # #if 0 // Set to 1 to activate
