@@ -149,6 +149,7 @@ class trot:
         self.body_IK.Lrf = np.append(points_next[1].copy(), 1)
         self.body_IK.Llb = np.append(points_next[2].copy(), 1)
         self.body_IK.Lrb = np.append(points_next[3].copy(), 1)
+        self..body_IK.setThetas()
         
         # T_phi経過後
         if(self.control_step == self.phi_control_step):
