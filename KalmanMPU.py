@@ -171,7 +171,7 @@ def main():
         print("dt:{}, kal_deg_x:{}, comp_deg_x:{}".format(t_kf.dt, t_kf._kalAngleX, t_kf._compAngleX))
         print("dt:{}, kal_deg_y:{}, comp_deg_y:{}".format(t_kf.dt, t_kf._kalAngleY, t_kf._compAngleY))
         time.sleep(1)
-
+        
     t_kf.pause_timer_kalman()
     
 if __name__ == '__main__':
