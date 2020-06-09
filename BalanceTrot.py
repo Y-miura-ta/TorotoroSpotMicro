@@ -40,8 +40,6 @@ class trot:
         self.phi_control_step = int(self.time_phi/control_interval)
         # 遊脚期脚上昇時の制御ステップ数．降下時間は(1-gamma)
         self.gamma_control_step = int(gamma*self.phi_control_step)
-        # 何回制御関数が呼ばれたか
-        self.call_num = 0
         # 制御が何ステップ目か
         self.control_step = 0
         # どの脚が遊脚か
@@ -133,33 +131,30 @@ class trot:
         # self.v_body_LPF_last[2] = self.v_body_LPF[2]
 
         points_next = []        
-        #脚ごとに制御を分ける
+        # 脚ごとに制御を分ける
         for leg_num in range(4):
             if(self.is_floating[leg_num]):
                 if(self.control_step < self.gamma_control_step):
                     p_next = float_up_leg(v_body_obs, self.control_step, self.gamma_control_step, leg_num)
                 else:
                     if(abs(rpy_body_obs[0]) < th_rough_control_roll):
-                        p_next = self.float_down_leg(v_body_obs, self.control, self.phi_control_step, leg_num)
+                        p_next = self.float_down_leg(v_body_obs, self.control_step, self.phi_control_step, leg_num)
                     else:
-                        p_next = self.float_down_leg_rough(v_body_obs, rpy_body_obs, self.control, self.phi_control_step, leg_num)
+                        p_next = self.float_down_leg_rough(v_body_obs, rpy_body_obs, self.control_step, self.phi_control_step, leg_num)
             else:
-                p_next = self.stance_leg(v_body_d, self.v_body_LPF, self.control_step, self.T_phi_control_step, leg_num)
-                    self.set_leg_theta(p_leg, leg_num)
-
+                p_next = self.stance_leg(v_body_obs, self.control_step, self.phi_control_step, leg_num)
+            points_next.append(p_next)
             
-            #T_phi経過後
-            if(self.control_step == self.T_phi_control_step):
-
-                #初期化
-                self.control_step = 0
-
-                #立脚と遊脚を切り替える
-                self.is_floating = [self.is_floating[0]^1,
-                                    self.is_floating[1]^1, 
-                                    self.is_floating[2]^1, 
-                                    self.is_floating[3]^1]
-
-            self.control_step += 1
-
-        self.call_num += 1
+        self.body_IK.Llf = np.append(points_next[0].copy(), 1)
+        self.body_IK.Lrf = np.append(points_next[1].copy(), 1)
+        self.body_IK.Llb = np.append(points_next[2].copy(), 1)
+        self.body_IK.Lrb = np.append(points_next[3].copy(), 1)
+        
+        # T_phi経過後
+        if(self.control_step == self.phi_control_step):
+            # 初期化
+            self.control_step = 0
+            # 立脚と遊脚を切り替える
+            self.is_floating = self.is_floating^1
+            
+        self.control_step += 1
