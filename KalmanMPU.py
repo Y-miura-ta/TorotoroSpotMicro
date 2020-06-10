@@ -3,6 +3,7 @@
 import time
 import signal
 from math import *
+import numpy as np
 import smbus
 import Kalman as kf
 
@@ -129,6 +130,23 @@ def kalmanLoop(dt, kalAngleX, kalAngleY, kalmanX, kalmanY, kalmanZ, gyroXangle, 
 
     return kalAngleX, kalAngleY, kalmanX, kalmanY, kalmanZ, gyroXangle, gyroYangle, compAngleX, compAngleY, raw_datas
 
+class timer_comp_vel():
+    def __init__(self):
+        self.alpha = 0.8 # 重力分離用ローパスフィルタの変数
+        self.vel = np.array([0, 0, 0])
+        self.compVel = np.array([0, 0, 0])
+        self.compAcc = np.array([0, 0, 0])
+        self.gravity = np.array([0, 0, 0])
+
+    def vel_LPF(self, acc_digi, dt):
+        acc = acc_digi/16384*1000
+        self.gravity = self.alpha*self.gravity + (1 - self.alpha)*acc
+        self.compAcc = acc - self.gravity
+        acc[abs(acc_digi) < 100] = 0
+        self.vel = self.vel + self.compAcc*dt
+
+        return self.vel
+
 class timer_kalman():
     def __init__(self):
         self._kalAngleX = kalAngleX
@@ -146,6 +164,10 @@ class timer_kalman():
 
         self._raw_datas = []
 
+        # calc LPF vel
+        self.lpf = timer_comp_vel()
+        self.lpf_vel = np.array([0, 0, 0])
+
         # タイマ割り込みの目標周期[s]
         self.dt =  10.0e-3
         self.real_dt = self.dt
@@ -158,6 +180,7 @@ class timer_kalman():
         time_now = time.time()
         self.real_dt = time_now - self.controll_time
         self._kalAngleX, self._kalAngleY, self._kalmanX, self._kalmanY, self._kalmanZ, self._gyroXangle, self._gyroYangle, self._compAngleX, self._compAngleY, self._raw_datas = kalmanLoop(self.real_dt, self._kalAngleX, self._kalAngleY, self._kalmanX, self._kalmanY, self._kalmanZ, self._gyroXangle, self._gyroYangle, self._compAngleX, self._compAngleY)
+        self.lpf_vel = self.lpf.vel_LPF(np.array(self._raw_datas[0]), self.real_dt)
         self.controll_time = time_now
         # print(self.real_dt)
 
@@ -170,7 +193,9 @@ def main():
     for i in range(1000):
         print("dt:{}, kal_deg_x:{}, comp_deg_x:{}".format(t_kf.dt, t_kf._kalAngleX, t_kf._compAngleX))
         print("dt:{}, kal_deg_y:{}, comp_deg_y:{}".format(t_kf.dt, t_kf._kalAngleY, t_kf._compAngleY))
-        time.sleep(1)
+        print("dt:{}, lpf_vx:{}, lpf_vy:{}".format(t_kf.dt, t_kf.lpf_vel[0], t_kf.lpf_vel[1]))
+        print(t_kf._raw_datas)
+        time.sleep(0.1)
         
     t_kf.pause_timer_kalman()
     
