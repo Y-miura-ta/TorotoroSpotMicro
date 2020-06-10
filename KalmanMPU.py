@@ -40,8 +40,11 @@ def MPU_Init():
     
 def read_raw_data(addr):
     #Accelero and Gyro value are 16-bit
-    high = bus.read_byte_data(Device_Address, addr)
-    low = bus.read_byte_data(Device_Address, addr+1)
+    try:
+        high = bus.read_byte_data(Device_Address, addr)
+        low = bus.read_byte_data(Device_Address, addr+1)
+    except IOError:
+        return 1
     
     #concatenate higher and lower value
     value = ((high << 8) | low)

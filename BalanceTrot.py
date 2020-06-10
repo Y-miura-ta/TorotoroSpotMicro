@@ -18,7 +18,7 @@ control_interval = 100.0e-3
 # k_lpf = 0.1
 
 # 姿勢角が横方向に倒れすぎると脚の接地位置を大きく出す
-th_rough_control_roll = 45
+th_rough_control_roll = 30
 
 # #関節の回転正方向を決める行列
 # theta_sign = np.array([
@@ -105,7 +105,7 @@ class trot:
 
     def float_down_leg_rough(self, v_body_obs, rpy_body_obs, iteration, num_goal, leg_num):
         p_start = self.p_leg_prev[leg_num]
-        p_goal = self.floor_hip[leg_num] + self.time_phi/2*self.target_vel + ((self.body_height + IK.R_TIP_BALL)/g)**0.5*(v_body_obs - self.target_vel) + np.array([0, -np.sign(rpy_body_obs[0])*80, 60])
+        p_goal = self.floor_hip[leg_num] + self.time_phi/2*self.target_vel + ((self.body_height + IK.R_TIP_BALL)/g)**0.5*(v_body_obs - self.target_vel) + np.array([0, -np.sign(rpy_body_obs[0])*80, 100])
         div_num = num_goal - iteration
         if(div_num <= 0):
             print("W: float_down_leg_rough:{}, div_num:{}".format(leg_num, div_num))
@@ -164,17 +164,16 @@ def main():
     body_center = np.array([0, 0, 0])
     body_height = 170
     step_height = 40
-    target_vel = np.array([0, 0, 0])
+    target_vel = np.array([0, 100, 0])
     trot_walk = trot(body_center, body_height, step_height, target_vel)
 
-    #t_kf = kmpu.timer_kalman()
-
-    for i in range(20):
-        v_body_obs = np.array([0,0,0])
-        rpy_body_obs = np.array([0, 0]) # [t_kf._kalAngleX, t_kf._kalAngleY])
-        # print("rpy_body_obs:{}".format(rpy_body_obs))
-        trot_walk.walking(v_body_obs, rpy_body_obs)
-        time.sleep(0.05)
+    # t_kf = kmpu.timer_kalman()
+    # for i in range(2000):
+    #     v_body_obs = np.array([0,0,0])
+    #     rpy_body_obs = np.array([0, 0]) # [t_kf._kalAngleX, t_kf._kalAngleY])
+    #     # print("rpy_body_obs:{}".format(rpy_body_obs))
+    #     trot_walk.walking(v_body_obs, rpy_body_obs)
+    #     time.sleep(0.05)
 
     t_kf = kmpu.timer_kalman()
     for i in range(20000):
