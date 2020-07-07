@@ -43,6 +43,7 @@ class bodyIK:
     def calcLegPoseLF(self):
         try:
             self.thetas_lf = IK.legIK(np.linalg.inv(self.Tlf)@self.Llf)
+            self.Llf_ex = self.Llf
         except ValueError:
             self.thetas_lf = IK.legIK(np.linalg.inv(self.Tlf)@self.Llf_ex)
             print("Left front leg uses except point")
@@ -50,6 +51,7 @@ class bodyIK:
     def calcLegPoseRF(self):
         try:
             self.thetas_rf = IK.legIK(self.Ix@np.linalg.inv(self.Trf)@self.Lrf)
+            self.Lrf_ex = self.Lrf
         except ValueError:
             self.thetas_rf = IK.legIK(self.Ix@np.linalg.inv(self.Trf)@self.Lrf_ex)
             print("Right front leg uses except point")
@@ -57,6 +59,7 @@ class bodyIK:
     def calcLegPoseLB(self):
         try:
             self.thetas_lb = IK.legIK(np.linalg.inv(self.Tlb)@self.Llb)
+            self.Llb_ex = self.Llb
         except ValueError:
             self.thetas_lb = IK.legIK(np.linalg.inv(self.Tlb)@self.Llb_ex)
             print("Left back leg uses except point")
@@ -64,6 +67,7 @@ class bodyIK:
     def calcLegPoseRB(self):
         try:
             self.thetas_rb = IK.legIK(self.Ix@np.linalg.inv(self.Trb)@self.Lrb)
+            self.Lrb_ex = self.Lrb
         except ValueError:
             self.thetas_rb = IK.legIK(self.Ix@np.linalg.inv(self.Trb)@self.Lrb_ex)
             print("Right back leg uses except point")

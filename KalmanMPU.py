@@ -93,13 +93,14 @@ def kalmanLoop(dt, kalAngleX, kalAngleY, kalmanX, kalmanY, kalmanZ, gyroXangle, 
     gyroY = read_raw_data(GYRO_YOUT_H)
     gyroZ = read_raw_data(GYRO_ZOUT_H)
 
-    raw_datas = [[accX, accY, accZ], [tempRaw], [gyroX, gyroY, gyroZ]]
+    #raw_datas = [[accX, accY, accZ], [tempRaw], [gyroX, gyroY, gyroZ]]
 
     roll  = atan(accY / sqrt(accX * accX + accZ * accZ)) * RAD_TO_DEG
     pitch = atan2(-accX, accZ) * RAD_TO_DEG
 
     gyroXrate = gyroX / 131.0 # Convert to deg/s
     gyroYrate = gyroY / 131.0 # Convert to deg/s
+    raw_datas = [[accX, accY, accZ], [tempRaw], [gyroXrate, gyroYrate, 0]]
 
     # This fixes the transition problem when the accelerometer angle jumps between -180 and 180 degrees
     if((pitch < -90 and kalAngleY > 90) or (pitch > 90 and kalAngleY < -90)):
@@ -142,10 +143,10 @@ class timer_comp_vel():
         self.gravity = np.array([0, 0, 0])
 
     def vel_LPF(self, acc_digi, dt):
-        acc = acc_digi/16384*1000
+        acc = acc_digi#/16384.0
         self.gravity = self.alpha*self.gravity + (1 - self.alpha)*acc
         self.compAcc = acc - self.gravity
-        acc[abs(acc_digi) < 100] = 0
+        self.compAcc[abs(self.compAcc) < 100] = 0
         self.vel = self.vel + self.compAcc*dt
 
         return self.vel
@@ -167,6 +168,9 @@ class timer_kalman():
 
         self._raw_datas = []
 
+        self.a_glob = np.array([0,0,0])
+        self.v_glob = np.array([0,0,0])
+
         # calc LPF vel
         self.lpf = timer_comp_vel()
         self.lpf_vel = np.array([0, 0, 0])
@@ -184,6 +188,22 @@ class timer_kalman():
         self.real_dt = time_now - self.controll_time
         self._kalAngleX, self._kalAngleY, self._kalmanX, self._kalmanY, self._kalmanZ, self._gyroXangle, self._gyroYangle, self._compAngleX, self._compAngleY, self._raw_datas = kalmanLoop(self.real_dt, self._kalAngleX, self._kalAngleY, self._kalmanX, self._kalmanY, self._kalmanZ, self._gyroXangle, self._gyroYangle, self._compAngleX, self._compAngleY)
         self.lpf_vel = self.lpf.vel_LPF(np.array(self._raw_datas[0]), self.real_dt)
+
+        rad_x, rad_y = pi*self._kalAngleX/180, pi*self._kalAngleY/180
+        R_x = np.array([
+            [1, 0, 0],
+            [0, cos(rad_x), -sin(rad_x)],
+            [0, sin(rad_x), cos(rad_x)]
+        ])
+        R_y = np.array([
+            [cos(rad_y), 0, sin(rad_y)],
+            [0, 1, 0],
+            [-sin(rad_y), 0, cos(rad_y)]
+        ])
+        a_sens = np.array(self._raw_datas[0])
+        self.a_glob = R_y@R_x@(a_sens.T/16384.0*9.8) + np.array([0, 0, -9.8]).T
+        self.v_glob = self.v_glob + 0.8*self.a_glob*self.real_dt
+        
         self.controll_time = time_now
         # print(self.real_dt)
 
@@ -194,10 +214,14 @@ def main():
     t_kf = timer_kalman()
 
     for i in range(1000):
-        print("dt:{}, kal_deg_x:{}, comp_deg_x:{}".format(t_kf.dt, t_kf._kalAngleX, t_kf._compAngleX))
-        print("dt:{}, kal_deg_y:{}, comp_deg_y:{}".format(t_kf.dt, t_kf._kalAngleY, t_kf._compAngleY))
-        print("dt:{}, lpf_vx:{}, lpf_vy:{}".format(t_kf.dt, t_kf.lpf_vel[0], t_kf.lpf_vel[1]))
-        print(t_kf._raw_datas)
+        #print("dt:{}, kal_deg_x:{}, comp_deg_x:{}".format(t_kf.dt, t_kf._kalAngleX, t_kf._compAngleX))
+        #print("dt:{}, kal_deg_y:{}, comp_deg_y:{}".format(t_kf.dt, t_kf._kalAngleY, t_kf._compAngleY))
+        #print("dt:{}, lpf_vx:{}, lpf_vy:{}".format(t_kf.dt, t_kf.lpf_vel[0], t_kf.lpf_vel[1]))
+        #print("dt:{:3}, a_x:{:3}".format(t_kf.dt, t_kf.a_glob))
+        print("dt:%3f, a_x:%3f, a_y:%3f, a_z:%3f" % (t_kf.dt, t_kf.a_glob[0], t_kf.a_glob[1], t_kf.a_glob[2]))
+        print("dt:%3f, a_x:%3f, a_y:%3f, a_z:%3f" % (t_kf.dt, t_kf.v_glob[0], t_kf.v_glob[1], t_kf.v_glob[2]))
+        #print(t_kf._raw_datas)
+        print("------------------------------------------------------------------------------------------")
         time.sleep(0.1)
         
     t_kf.pause_timer_kalman()

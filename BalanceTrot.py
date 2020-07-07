@@ -9,7 +9,7 @@ import RobotController as rc
 import KalmanMPU as kmpu
 
 # 重力加速度[mm/s2]
-g = 9.8e3
+g = 9800
 
 # 制御の加わる周期[s]
 control_interval = 100.0e-3
@@ -18,7 +18,7 @@ control_interval = 100.0e-3
 # k_lpf = 0.1
 
 # 姿勢角が横方向に倒れすぎると脚の接地位置を大きく出す
-th_rough_control_roll = 30
+th_rough_control_roll = 1000
 
 # #関節の回転正方向を決める行列
 # theta_sign = np.array([
@@ -28,6 +28,9 @@ th_rough_control_roll = 30
 #     [1, 1, 1]  # rb
 # ])
 # # theta_sign_vec = theta_sign.flatten()
+
+k_s = np.array([0.2,0.2,1])*0
+k_fd = np.array([0.2,0.2,1])*15
 
 class trot:
     def __init__(self, _body_center, _body_height, _step_height, _target_vel, _time_phi=0.5, _gamma=0.5):
@@ -46,11 +49,17 @@ class trot:
         # どの脚が遊脚か
         self.is_floating = np.array([0, 1, 1, 0]) # lf, rf, lb, rb
         # おしりの位置の真下位置をセット
+        # self.floor_hip = np.array([
+        #     [IK.L/2.0-20, IK.W/2.0+35, -self.body_height],
+        #     [IK.L/2.0-20, -IK.W/2.0-35, -self.body_height],
+        #     [-IK.L/2.0-20, IK.W/2.0+35, -self.body_height],
+        #     [-IK.L/2.0-20, -IK.W/2.0-35, -self.body_height]
+        # ])
         self.floor_hip = np.array([
-            [IK.L/2.0, IK.W/2.0, -self.body_height],
-            [IK.L/2.0, -IK.W/2.0, -self.body_height],
-            [-IK.L/2.0, IK.W/2.0, -self.body_height],
-            [-IK.L/2.0, -IK.W/2.0, -self.body_height]
+            [IK.L/2.0-10, IK.W/2.0, -self.body_height],
+            [IK.L/2.0-10, -IK.W/2.0, -self.body_height],
+            [-IK.L/2.0-40, IK.W/2.0, -self.body_height],
+            [-IK.L/2.0-40, -IK.W/2.0, -self.body_height]
         ])
         # 以前の脚先目標位置
         self.p_leg_prev = self.floor_hip.copy()
@@ -68,7 +77,8 @@ class trot:
         
     def stance_leg(self, v_body_obs, iteration, num_goal, leg_num):
         p_start = self.p_leg_prev[leg_num]
-        p_goal = self.floor_hip[leg_num] - self.time_phi/2*self.target_vel - ((self.body_height + IK.R_TIP_BALL)/g)**0.5*(v_body_obs - self.target_vel)
+        p_goal = self.floor_hip[leg_num] - self.time_phi/2*self.target_vel - ((self.body_height + IK.R_TIP_BALL)/g)**0.5*(v_body_obs*k_s - self.target_vel)
+        #print(p_goal)
         div_num = num_goal - iteration
         if(div_num <= 0):
             print("W: stance_leg:{}, div_num:{}".format(leg_num, div_num))
@@ -93,7 +103,8 @@ class trot:
 
     def float_down_leg(self, v_body_obs, iteration, num_goal, leg_num):
         p_start = self.p_leg_prev[leg_num]
-        p_goal = self.floor_hip[leg_num] + self.time_phi/2*self.target_vel + ((self.body_height + IK.R_TIP_BALL)/g)**0.5*(v_body_obs - self.target_vel)
+        p_goal = self.floor_hip[leg_num] + self.time_phi/2*self.target_vel + ((self.body_height + IK.R_TIP_BALL)/g)**0.5*(v_body_obs*k_fd - self.target_vel)
+        #print( ((self.body_height + IK.R_TIP_BALL)/g)**0.5*(v_body_obs - self.target_vel)*k_fd )
         div_num = num_goal - iteration
         if(div_num <= 0):
             print("W: float_down_leg:{}, div_num:{}".format(leg_num, div_num))
@@ -105,7 +116,7 @@ class trot:
 
     def float_down_leg_rough(self, v_body_obs, rpy_body_obs, iteration, num_goal, leg_num):
         p_start = self.p_leg_prev[leg_num]
-        p_goal = self.floor_hip[leg_num] + self.time_phi/2*self.target_vel + ((self.body_height + IK.R_TIP_BALL)/g)**0.5*(v_body_obs - self.target_vel) + np.array([0, -np.sign(rpy_body_obs[0])*80, 100])
+        p_goal = self.floor_hip[leg_num] + self.time_phi/2*self.target_vel + ((self.body_height + IK.R_TIP_BALL)/g)**0.5*(v_body_obs - self.target_vel) + np.array([0, -rpy_body_obs[0]*5, 0])
         div_num = num_goal - iteration
         if(div_num <= 0):
             print("W: float_down_leg_rough:{}, div_num:{}".format(leg_num, div_num))
@@ -141,7 +152,7 @@ class trot:
             points_next.append(p_next)
             
         self.body_IK.Llf = np.append(points_next[0].copy(), 1)
-        print("self.body_IK.Llf:{}".format(self.body_IK.Llf))
+        #print("self.body_IK.Llf:{}".format(self.body_IK.Llf))
         self.body_IK.Lrf = np.append(points_next[1].copy(), 1)
         self.body_IK.Llb = np.append(points_next[2].copy(), 1)
         self.body_IK.Lrb = np.append(points_next[3].copy(), 1)
@@ -164,7 +175,7 @@ def main():
     body_center = np.array([0, 0, 0])
     body_height = 170
     step_height = 40
-    target_vel = np.array([0, 100, 0])
+    target_vel = np.array([0, 0, 0])
     trot_walk = trot(body_center, body_height, step_height, target_vel)
 
     # t_kf = kmpu.timer_kalman()
@@ -174,14 +185,16 @@ def main():
     #     # print("rpy_body_obs:{}".format(rpy_body_obs))
     #     trot_walk.walking(v_body_obs, rpy_body_obs)
     #     time.sleep(0.05)
-
+    
     t_kf = kmpu.timer_kalman()
+    time.sleep(1)
     for i in range(20000):
-        v_body_obs = np.array([t_kf.lpf_vel[0], t_kf.lpf_vel[1], t_kf.lpf_vel[2]])
+        v_body_obs = np.array([t_kf.v_glob[0], t_kf.v_glob[1], 0])#np.array([t_kf._raw_datas[2][1], -t_kf._raw_datas[2][0], t_kf._raw_datas[2][2]])
+        print("v:{}".format(v_body_obs))
         rpy_body_obs = np.array([t_kf._kalAngleX, t_kf._kalAngleY])
         # print("rpy_body_obs:{}".format(rpy_body_obs))
         trot_walk.walking(v_body_obs, rpy_body_obs)
-        time.sleep(0.05)
+        time.sleep(1)#0.05)
         
     t_kf.pause_timer_kalman()
     
