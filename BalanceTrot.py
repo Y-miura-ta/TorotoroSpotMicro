@@ -49,18 +49,18 @@ class trot:
         # どの脚が遊脚か
         self.is_floating = np.array([0, 1, 1, 0]) # lf, rf, lb, rb
         # おしりの位置の真下位置をセット
-        # self.floor_hip = np.array([
-        #     [IK.L/2.0-20, IK.W/2.0+35, -self.body_height],
-        #     [IK.L/2.0-20, -IK.W/2.0-35, -self.body_height],
-        #     [-IK.L/2.0-20, IK.W/2.0+35, -self.body_height],
-        #     [-IK.L/2.0-20, -IK.W/2.0-35, -self.body_height]
-        # ])
         self.floor_hip = np.array([
-            [IK.L/2.0-10, IK.W/2.0, -self.body_height],
-            [IK.L/2.0-10, -IK.W/2.0, -self.body_height],
-            [-IK.L/2.0-40, IK.W/2.0, -self.body_height],
-            [-IK.L/2.0-40, -IK.W/2.0, -self.body_height]
+            [IK.L/2.0-20, IK.W/2.0+35, -self.body_height],
+            [IK.L/2.0-20, -IK.W/2.0-35, -self.body_height],
+            [-IK.L/2.0-20, IK.W/2.0+35, -self.body_height],
+            [-IK.L/2.0-20, -IK.W/2.0-35, -self.body_height]
         ])
+        # self.floor_hip = np.array([
+        #     [IK.L/2.0-10, IK.W/2.0, -self.body_height],
+        #     [IK.L/2.0-10, -IK.W/2.0, -self.body_height],
+        #     [-IK.L/2.0-40, IK.W/2.0, -self.body_height],
+        #     [-IK.L/2.0-40, -IK.W/2.0, -self.body_height]
+        # ])
         # 以前の脚先目標位置
         self.p_leg_prev = self.floor_hip.copy()
 
@@ -194,7 +194,7 @@ def main():
         rpy_body_obs = np.array([t_kf._kalAngleX, t_kf._kalAngleY])
         # print("rpy_body_obs:{}".format(rpy_body_obs))
         trot_walk.walking(v_body_obs, rpy_body_obs)
-        time.sleep(1)#0.05)
+        time.sleep(0.05)
         
     t_kf.pause_timer_kalman()
     
